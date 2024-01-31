@@ -15,9 +15,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 public class HospedeController {
+    @Autowired 
+    HospedeService hospedeService;
     
-    private List<Hospedes> listaHospedes = new ArrayList<>();
-    private List<Reservas> listaReservas = new ArrayList<>();
+    @Autowired 
+    ReservaService reservaService;
+    
     
     @GetMapping("/inicio")
     public String iniciar(){
@@ -32,14 +35,13 @@ public class HospedeController {
     
     @PostMapping("/gravar-hospede")
     public String gravarHospede(@ModelAttribute Hospedes hospede, Model model){
-        hospede.setId(listaHospedes.size()+1);
-        listaHospedes.add(hospede);
+        hospedeService.criar(hospede);
         return "redirect:/listagem-hos";
     }
     
     @GetMapping("/listagem-hos")
     public String listarHosp(Model model){
-        model.addAttribute("lista", listaHospedes);
+        model.addAttribute("lista", hospedeService.listarTodos());
         return "lista";
     }
     
@@ -51,40 +53,57 @@ public class HospedeController {
     }
     
     @PostMapping("/gravar-reserva")
-    public String gravarReserva(@ModelAttribute Reservas reserva, Model model){
-        reserva.setId(listaReservas.size()+1);
-        listaReservas.add(reserva);
+    public String gravarReserva (@ModelAttribute Reservas reserva, Model model){
+        reservaService.criar(reserva);
         return "redirect:listagem-res";
     }  
     
     @GetMapping("/listagem-res")
     public String listarRes(Model model){
-        model.addAttribute("listagem", listaReservas);
+        model.addAttribute("listagem", reservaService.listarTodos());
         return "listaReservas";
     }
     
     @GetMapping("/exibir")
     public String exibirReserva(Model model, @RequestParam String id){
         Integer idHospede = Integer.parseInt(id);
-        Hospedes hospedeEncontrado = new Hospedes();
         
-        for (Hospedes h : listaHospedes){
-            if (h.getId() == idHospede) {
-                hospedeEncontrado = h;
-                break;
-            }
-        }
+        Hospedes hospedeEncontrado = new Hospedes();
+        hospedeEncontrado = hospedeService.buscarPorId(idHospede);
         
         List<Reservas> reservaEncontrada = new ArrayList<>();
-        for (Reservas res : listaReservas){
-            if (res.getHospede().getId() == idHospede) {
-                reservaEncontrada.add(res);
-            }
-        }
+        reservaEncontrada = reservaService.listar(idHospede);
+        
         
         model.addAttribute("hospede", hospedeEncontrado);
         model.addAttribute("reservas", new Reservas());
         model.addAttribute("reserva", reservaEncontrada);
         return "cadastroReservas";
+    } 
+    
+    @GetMapping("/atualizar-hospede/{id}")
+    public String atualizarHospede(@PathVariable(value = "id") Integer id, Model model) { 
+        Hospedes hosp = hospedeService.buscarPorId(id);
+        model.addAttribute("hospede", hosp); 
+        return "atualizarHos";
+    }
+    
+    @GetMapping("/deletar-hospede/{id}")
+    public String deletarHospede(@PathVariable(value = "id") Integer id) { 
+        hospedeService.excluir(id); 
+        return "redirect:/listagem-hos"; 
+    }
+    
+    @GetMapping("/atualizar-reserva/{id}")
+    public String atualizarReserva(@PathVariable(value = "id") Integer id, Model model) { 
+        Reservas res = reservaService.buscarPorId(id);
+        model.addAttribute("reserva", res); 
+        return "atualizarRes";
+    }
+    
+    @GetMapping("/deletar-reserva/{id}")
+    public String deletarReserva(@PathVariable(value = "id") Integer id) { 
+        reservaService.excluir(id); 
+        return "redirect:/listagem-res"; 
     }
 }
